@@ -1,17 +1,13 @@
-# Virtual Environment
+Virtual Environment
 env/
 venv/
 *.pyc
 
-# Python cache
-__pycache__/
+Python cache
+pycache/
 
-# Django secret files
-.env
-*.sqlite3
+Django database file
+db.sqlite3
 
-# Static files
-/static/
-
-# Media files
-/media/
+Operating System files
+.DS_Store
