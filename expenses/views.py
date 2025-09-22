@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
@@ -12,10 +12,19 @@ def register_view(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Create default categories for the new user, this is the correct place for it
+            Category.objects.create(user=user, name='Food')
+            Category.objects.create(user=user, name='Transport')
+            Category.objects.create(user=user, name='Bills')
+            Category.objects.create(user=user, name='Entertainment')
             login(request, user)
             messages.success(request, 'Registration successful. You are now logged in.')
             return redirect('dashboard')
         else:
+            # Add form errors to messages for better feedback
+            for field in form:
+                for error in field.errors:
+                    messages.error(request, f"{field.label}: {error}")
             messages.error(request, 'Unsuccessful registration. Invalid information.')
     else:
         form = UserCreationForm()
@@ -64,18 +73,43 @@ def dashboard(request):
     else:
         form = ExpenseForm(user=request.user)
 
-    expenses = Expense.objects.filter(user=request.user).order_by('-date')
+    expenses = Expense.objects.filter(user=request.user)
     
-    # Create some default categories if the user has none
-    if not Category.objects.filter(user=request.user).exists():
-        Category.objects.create(user=request.user, name='Food')
-        Category.objects.create(user=request.user, name='Transport')
-        Category.objects.create(user=request.user, name='Bills')
-        Category.objects.create(user=request.user, name='Entertainment')
-
     context = {
         'form': form,
         'expenses': expenses,
     }
     return render(request, 'expenses/dashboard.html', context)
+
+@login_required
+def edit_expense(request, expense_id):
+    """Handles editing an existing expense."""
+    expense = get_object_or_404(Expense, id=expense_id, user=request.user)
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, instance=expense, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Expense updated successfully!')
+            # CRITICAL FIX: Always redirect after a successful POST.
+            # This prevents the duplicate entry bug.
+            return redirect('dashboard')
+    else:
+        form = ExpenseForm(instance=expense, user=request.user)
+    
+    return render(request, 'expenses/edit_expense.html', {'form': form, 'expense': expense})
+
+
+@login_required
+def delete_expense(request, expense_id):
+    """Handles deleting an existing expense."""
+    expense = get_object_or_404(Expense, id=expense_id, user=request.user)
+    if request.method == 'POST':
+        expense.delete()
+        messages.success(request, 'Expense deleted successfully!')
+        # CRITICAL FIX: Always redirect after a successful POST.
+        # This makes the delete action clean and reliable.
+        return redirect('dashboard')
+    
+    # This view only handles POST, so a GET request will just go back to the dashboard.
+    return redirect('dashboard')
 
