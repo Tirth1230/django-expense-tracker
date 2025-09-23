@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import Expense, Category
 from .forms import ExpenseForm
+from datetime import datetime
+from django.db.models import Sum
 
 def register_view(request):
     """Handles user registration."""
@@ -112,4 +114,37 @@ def delete_expense(request, expense_id):
     
     # This view only handles POST, so a GET request will just go back to the dashboard.
     return redirect('dashboard')
+
+@login_required
+def report_view(request):
+    """
+    Generates a report of expenses for the current month, grouped by category.
+    """
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    # Get all expenses for the current user and current month
+    expenses = Expense.objects.filter(
+        user=request.user, 
+        date__year=current_year, 
+        date__month=current_month
+    )
+
+    # Calculate the total expenses for the month
+    total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
+
+    # Group expenses by category and calculate the sum for each
+    category_summary = (
+        expenses.values('category__name')
+        .annotate(total_amount=Sum('amount'))
+        .order_by('-total_amount')
+    )
+
+    context = {
+        'total_expenses': total_expenses,
+        'category_summary': category_summary,
+        'report_month': datetime.now().strftime('%B %Y'), # e.g., "September 2025"
+    }
+    return render(request, 'expenses/report.html', context)
+
 
