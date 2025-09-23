@@ -8,6 +8,8 @@ from .forms import ExpenseForm
 from datetime import datetime
 from django.db.models import Sum
 import json 
+import csv
+from django.http import HttpResponse
 
 def register_view(request):
     """Handles user registration."""
@@ -155,3 +157,27 @@ def report_view(request):
     return render(request, 'expenses/report.html', context)
 
 
+@login_required
+def export_csv(request):
+    """
+    Handles the logic for exporting the current month's expenses to a CSV file.
+    """
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="expense_report_{}.csv"'.format(datetime.now().strftime("%Y_%m"))
+
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Description', 'Category', 'Amount'])
+
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    expenses = Expense.objects.filter(
+        user=request.user,
+        date__year=current_year,
+        date__month=current_month
+    ).order_by('date')
+
+    for expense in expenses:
+        writer.writerow([expense.date, expense.description, expense.category.name, expense.amount])
+
+    return response
