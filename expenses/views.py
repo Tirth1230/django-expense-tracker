@@ -7,6 +7,7 @@ from .models import Expense, Category
 from .forms import ExpenseForm
 from datetime import datetime
 from django.db.models import Sum
+import json 
 
 def register_view(request):
     """Handles user registration."""
@@ -140,10 +141,16 @@ def report_view(request):
         .order_by('-total_amount')
     )
 
+    chart_labels = [item['category__name'] for item in category_summary]
+    chart_data = [float(item['total_amount']) for item in category_summary]
+
     context = {
         'total_expenses': total_expenses,
         'category_summary': category_summary,
-        'report_month': datetime.now().strftime('%B %Y'), # e.g., "September 2025"
+        'report_month': datetime.now().strftime('%B %Y'),
+        # Pass the chart data to the template, safely encoded as JSON
+        'chart_labels': json.dumps(chart_labels),
+        'chart_data': json.dumps(chart_data),
     }
     return render(request, 'expenses/report.html', context)
 
