@@ -6,7 +6,6 @@
     <title>Dashboard - Expense Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <!-- Defer Alpine to ensure it runs after the DOM is ready -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="h-full">
@@ -21,6 +20,15 @@
                             </svg>
                             <span class="ml-2 font-bold text-xl text-gray-800">ExpenseTracker</span>
                         </div>
+                        <!-- Navigation Links -->
+                        <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                            <a href="{% url 'dashboard' %}" class="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" aria-current="page">
+                                Dashboard
+                            </a>
+                            <a href="{% url 'report' %}" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                Reports
+                            </a>
+                        </div>
                     </div>
                     <div class="flex items-center">
                         <span class="text-sm text-gray-600 mr-4">Welcome, {{ request.user.username }}</span>
@@ -30,6 +38,7 @@
             </div>
         </nav>
 
+        <!-- Keep the rest of your dashboard.html file exactly the same -->
         <main id="main-content" class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div x-data="{ showEditModal: false, showDeleteModal: false, deleteUrl: '' }">
                 
