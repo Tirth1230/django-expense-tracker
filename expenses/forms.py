@@ -1,32 +1,39 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from .models import Expense, Category
+
+class CustomUserCreationForm(UserCreationForm):
+    """
+    A custom user creation form that includes a required email field.
+    """
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm', 'placeholder': 'you@example.com'})
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = UserCreationForm.Meta.fields + ('email',)
+
 
 class ExpenseForm(forms.ModelForm):
     """
-    Form for creating and updating Expense objects.
+    A form for creating and updating Expense objects, customized for the user.
     """
-    # Use a DateInput widget to get a nice calendar picker for the date
-    date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'})
-    )
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super(ExpenseForm, self).__init__(*args, **kwargs)
+        if user:
+            self.fields['category'].queryset = Category.objects.filter(user=user)
 
     class Meta:
         model = Expense
         fields = ['amount', 'description', 'category', 'date']
-
-    def __init__(self, *args, **kwargs):
-        # Pop the user out of kwargs before calling super
-        user = kwargs.pop('user', None)
-        super(ExpenseForm, self).__init__(*args, **kwargs)
-        
-        # This is the corrected line:
-        # Instead of user.categories, we directly query the Category model
-        # to find all categories belonging to the current user.
-        if user:
-            self.fields['category'].queryset = Category.objects.filter(user=user)
-        
-        # Add Tailwind classes to the other form fields for consistent styling
-        self.fields['amount'].widget.attrs.update({'class': 'mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm', 'placeholder': 'e.g., 50.00'})
-        self.fields['description'].widget.attrs.update({'class': 'mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm', 'placeholder': 'e.g., Lunch with client'})
-        self.fields['category'].widget.attrs.update({'class': 'mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'})
+        widgets = {
+            'amount': forms.NumberInput(attrs={'class': 'mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm', 'placeholder': 'e.g., 50.00'}),
+            'description': forms.Textarea(attrs={'class': 'mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm', 'rows': 3, 'placeholder': 'e.g., Lunch with client'}),
+            'category': forms.Select(attrs={'class': 'mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'}),
+            'date': forms.DateInput(attrs={'class': 'mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm', 'type': 'date'}),
+        }
 

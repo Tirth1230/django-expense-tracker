@@ -11,3 +11,7 @@ db.sqlite3
 
 Operating System files
 .DS_Store
+
+Google OAuth credentials
+client_secret.json
+token.json
